@@ -32,7 +32,11 @@
 //     socket.on("new_message", data => {
 //         console.log("New message");
 //         io.sockets.emit("receive_message", { message: data.message, username: socket.userName});
-//     })
+//     });
+
+//     socket.on('typing', data => {
+//         socket.broadcast.emit('typing', {username: socket.userName})
+//     });
 // });
 
 
@@ -40,6 +44,7 @@
 
 
 //Use WebSocket
+
 const WebSocket = require('ws');
 const port = 4040;
 const express = require('express');
@@ -71,10 +76,15 @@ wss.on('connection', (ws) => {
       ws.userName = data.username;
     } else if (data.event === 'new_message') {
       console.log('New message');
-      const response = JSON.stringify({ message: data.message, username: ws.userName });
       wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
-          client.send(response);
+          client.send(JSON.stringify({ event: 'receive_message', data: { message: data.message, username: ws.userName } }));
+        }
+      });
+    } else if (data.event === 'typing') {
+      wss.clients.forEach((client) => {
+        if (client !== ws && client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({ event: 'typing', data: { username: ws.userName } }));
         }
       });
     }

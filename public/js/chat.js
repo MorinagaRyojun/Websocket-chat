@@ -1,4 +1,4 @@
-
+// Use Socketio
 // (function connect() {
 //     let socket = io.connect("http://localhost:8080");
 
@@ -30,9 +30,22 @@
 //         listItem.classList.add('list-group-item')
 //         messageList.appendChild(listItem);
 //     })
+
+//     let info = document.querySelector('.info');
+
+//     message.addEventListener('keypress', e => {
+//         socket.emit('typing');
+//     })
+//     socket.on('typing', data => {
+//         info.textContent = data.username + " is typing...";
+//         setTimeout(() => { info.textContent = ''}, 5000);
+//     })
+
 // })();
 
 
+
+// Use WebSocket
 
 (function connect() {
   const ws = new WebSocket('ws://localhost:4040');
@@ -63,9 +76,24 @@
   ws.addEventListener('message', (event) => {
     console.log(event.data);
     const data = JSON.parse(event.data);
-    const listItem = document.createElement('li');
-    listItem.textContent = data.username + ': ' + data.message;
-    listItem.classList.add('list-group-item');
-    messageList.appendChild(listItem);
+
+    if (data.event === 'receive_message') {
+      const listItem = document.createElement('li');
+      listItem.textContent = data.data.username + ': ' + data.data.message;
+      listItem.classList.add('list-group-item');
+      messageList.appendChild(listItem);
+    } else if (data.event === 'typing') {
+      const info = document.querySelector('.info');
+      info.textContent = data.data.username + ' is typing...';
+      setTimeout(() => {
+        info.textContent = '';
+      }, 5000);
+    }
   });
+
+  message.addEventListener('keypress', () => {
+    ws.send(JSON.stringify({ event: 'typing' }));
+  });
+
+  
 })();
