@@ -1,46 +1,82 @@
-const WebSocket = require('ws');
-const port = 8080;
-const express = require('express');
-const socketio = require('socket.io');
-const app = express();
+// Use socketio
+// const WebSocket = require('ws');
+// const port = 8080;
+// const express = require('express');
+// const socketio = require('socket.io');
+// const app = express();
 
-// const wss = new WebSocket.Server({port:port}, () => {
+
+// app.set('view engine', 'ejs');
+// app.use(express.static('public'));
+
+// app.get('/', (req,res) => {
+//     res.render("index")
+// })
+
+// const server = app.listen(port, () => {
 //     console.log(`Server is Started on PORT : ${port}`);
 // });
 
-// wss.on('connection', ws => {
-//     console.log('New client is connected');
-//     wss.on('close', ws => {
-//         console.log("client has Disconnected")
+// //SocketIO 
+// const io = socketio(server)
+
+// io.on('connection', socket => {
+//     console.log("New client is connected");
+
+//     socket.userName = "Anonymous"
+
+//     socket.on("chang_username", data => {
+//         socket.userName = data.username
 //     });
+
+//     socket.on("new_message", data => {
+//         console.log("New message");
+//         io.sockets.emit("receive_message", { message: data.message, username: socket.userName});
+//     })
 // });
 
+
+
+
+
+//Use WebSocket
+const WebSocket = require('ws');
+const port = 4040;
+const express = require('express');
+const app = express();
 
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
 
-app.get('/', (req,res) => {
-    res.render("index")
-})
-
-const server = app.listen(port, () => {
-    console.log(`Server is Started on PORT : ${port}`);
+app.get('/', (req, res) => {
+  res.render('index');
 });
 
-//SocketIO 
-const io = socketio(server)
+const server = app.listen(port, () => {
+  console.log(`Server is started on PORT: ${port}`);
+});
 
-io.on('connection', socket => {
-    console.log("New user connected");
 
-    socket.userName = "Anonymous"
+const wss = new WebSocket.Server({ server });
 
-    socket.on("chang_username", data => {
-        socket.userName = data.username
-    });
+wss.on('connection', (ws) => {
+  console.log('New client is connected');
 
-    socket.on("new_message", data => {
-        console.log("New message");
-        socket.emit("receive_message", { message: data.message, username: socket.userName});
-    })
+  ws.userName = 'Anonymous';
+
+  ws.on('message', (message) => {
+    const data = JSON.parse(message);
+
+    if (data.event === 'chang_username') {
+      ws.userName = data.username;
+    } else if (data.event === 'new_message') {
+      console.log('New message');
+      const response = JSON.stringify({ message: data.message, username: ws.userName });
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(response);
+        }
+      });
+    }
+  });
 });
